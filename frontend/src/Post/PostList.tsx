@@ -28,10 +28,25 @@ function PostList() {
   const [openDialog, setOpenDialog] = React.useState(false);
   const [dialogData, setDialogData] = useState<any[]>([]);
 
+  const fetchData = async () => {
+    const response = await fetch(
+      "https://jsonplaceholder.typicode.com/posts?userId=1"
+    );
+    if (!response.ok) {
+      throw new Error("Data coud not be fetched!");
+    } else {
+      return response.json();
+    }
+  };
+
   useEffect(() => {
-    fetch("https://jsonplaceholder.typicode.com/posts?userId=1")
-      .then((response) => response.json())
-      .then((json) => setData(json));
+    fetchData()
+      .then((res) => {
+        setData(res);
+      })
+      .catch((e) => {
+        console.log(e.message);
+      });
   }, []);
 
   const handleChangePage = (event: unknown, newPage: number) => {
@@ -56,8 +71,20 @@ function PostList() {
     setShowSnackBar(false);
   };
 
-  const handleClickOpenDialog = (record: any) => {
-    setDialogData([record]);
+  const handleClickOpenDialog = (type: string, record: any) => {
+    if (type === "Add") {
+      setDialogData([
+        {
+          title: null,
+          body: null,
+          userId: 1,
+          type: "Add",
+        },
+      ]);
+    } else {
+      record.type = "Edit";
+      setDialogData([record]);
+    }
     setOpenDialog(true);
   };
 
@@ -74,33 +101,57 @@ function PostList() {
     setDialogData(newArr);
   };
 
-  const handleSaveDialog = () => {
-    fetch("https://jsonplaceholder.typicode.com/posts/1", {
-      method: "PUT",
-      body: JSON.stringify({
-        id: dialogData[0].id,
-        title: dialogData[0].title,
-        body: dialogData[0].body,
-        userId: dialogData[0].userId,
-      }),
-      headers: {
-        "Content-type": "application/json; charset=UTF-8",
-      },
-    })
-      .then((response) => response.json())
-      .then((json) => {
-        const newArr = data.map((item, i) => {
-          if (json.id === i) {
-            return { ...item, title: json.title, body: json.body };
-          } else {
-            return item;
-          }
+  const handleSaveDialog = async () => {
+    if (dialogData[0].type === "Edit") {
+      delete dialogData[0].type;
+      await fetch("https://jsonplaceholder.typicode.com/posts/1", {
+        method: "PUT",
+        body: JSON.stringify({
+          id: dialogData[0].id,
+          title: dialogData[0].title,
+          body: dialogData[0].body,
+          userId: dialogData[0].userId,
+        }),
+        headers: {
+          "Content-type": "application/json; charset=UTF-8",
+        },
+      })
+        .then((response) => response.json())
+        .then((json) => {
+          const newArr = data.map((item, i) => {
+            if (json.id === item.id) {
+              return { ...item,id:1, title: json.title, body: json.body };
+            } else {
+              return item;
+            }
+          });
+          setData(newArr);
+          setShowSnackBar(true);
+          setSnackBarMessage("Post has been updated Successfully!");
+          handleCloseDialog();
         });
-        setData(newArr);
-        setShowSnackBar(true);
-        setSnackBarMessage("Post has been updated Successfully!");
-        handleCloseDialog();
-      });
+    } else {
+      await fetch("https://jsonplaceholder.typicode.com/posts", {
+        method: "POST",
+        body: JSON.stringify({
+          title: dialogData[0].title,
+          body: dialogData[0].body,
+          userId: dialogData[0].userId,
+        }),
+        headers: {
+          "Content-type": "application/json; charset=UTF-8",
+        },
+      })
+        .then((response) => response.json())
+        .then((json) => {
+          const newArr = [...data];
+          newArr.push(json);
+          setData(newArr);
+          setShowSnackBar(true);
+          setSnackBarMessage("Post has been Added Successfully!");
+          handleCloseDialog();
+        });
+    }
   };
 
   const snackBarAction = (
@@ -116,7 +167,15 @@ function PostList() {
   );
 
   return (
-    <>
+    <div style={{ margin: "4rem" }}>
+      <Tooltip title="Add a Post" arrow>
+        <IconButton
+          onClick={(e) => handleClickOpenDialog("Add", null)}
+          style={{ float: "right" }}
+        >
+          <Add fontSize="small" />
+        </IconButton>
+      </Tooltip>
       <TableContainer component={Paper}>
         <Table>
           <TableHead>
@@ -140,7 +199,7 @@ function PostList() {
                       <div style={{ display: "flex" }}>
                         <Tooltip title="Edit" arrow>
                           <IconButton
-                            onClick={(e) => handleClickOpenDialog(row)}
+                            onClick={(e) => handleClickOpenDialog("Edit", row)}
                           >
                             <Edit fontSize="small" />
                           </IconButton>
@@ -198,7 +257,7 @@ function PostList() {
                 dialogData[0]?.title === "" ? "Title is Required!" : ""
               }
               error={dialogData[0]?.title === ""}
-              onChange={(e)=>handleInputValueChange(e)}
+              onChange={(e) => handleInputValueChange(e)}
             />
           </div>
           <div style={{ marginBottom: "1rem" }}>
@@ -212,7 +271,7 @@ function PostList() {
               multiline
               helperText={dialogData[0]?.body === "" ? "Body is Required!" : ""}
               error={dialogData[0]?.body === ""}
-              onChange={(e)=>handleInputValueChange(e)}
+              onChange={(e) => handleInputValueChange(e)}
             />
           </div>
         </DialogContent>
@@ -226,7 +285,7 @@ function PostList() {
           </Button>
         </DialogActions>
       </Dialog>
-    </>
+    </div>
   );
 }
 
