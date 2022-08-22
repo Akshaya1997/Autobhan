@@ -16,11 +16,10 @@ import TextField from "@material-ui/core/TextField";
 import Dialog from "@material-ui/core/Dialog";
 import DialogActions from "@material-ui/core/DialogActions";
 import DialogContent from "@material-ui/core/DialogContent";
-import Typography from "@material-ui/core/Typography";
 import DialogTitle from "@material-ui/core/DialogTitle";
+import { connect } from "react-redux";
 
-function PostList() {
-  const [data, setData] = useState<any[]>([]);
+function PostList(props: any) {
   const [page, setPage] = React.useState(0);
   const [rowsPerPage, setRowsPerPage] = React.useState(5);
   const [showSnackBar, setShowSnackBar] = React.useState(false);
@@ -42,7 +41,10 @@ function PostList() {
   useEffect(() => {
     fetchData()
       .then((res) => {
-        setData(res);
+        props.dispatch({
+          type: "FETCH_DATA_FROM_API",
+          payload: res,
+        });
       })
       .catch((e) => {
         console.log(e.message);
@@ -61,8 +63,11 @@ function PostList() {
   };
 
   const handleDelete = (id: number) => {
-    let filteredData = data.filter((x) => x.id !== id);
-    setData(filteredData);
+    props.dispatch({
+      type: "DELETE_DATA",
+      payload: id,
+    });
+
     setShowSnackBar(true);
     setSnackBarMessage("Post has been Deleted Successfully!");
   };
@@ -118,14 +123,10 @@ function PostList() {
       })
         .then((response) => response.json())
         .then((json) => {
-          const newArr = data.map((item, i) => {
-            if (json.id === item.id) {
-              return { ...item,id:1, title: json.title, body: json.body };
-            } else {
-              return item;
-            }
+          props.dispatch({
+            type: "UPDATE_DATA",
+            payload: json,
           });
-          setData(newArr);
           setShowSnackBar(true);
           setSnackBarMessage("Post has been updated Successfully!");
           handleCloseDialog();
@@ -144,9 +145,10 @@ function PostList() {
       })
         .then((response) => response.json())
         .then((json) => {
-          const newArr = [...data];
-          newArr.push(json);
-          setData(newArr);
+          props.dispatch({
+            type: "POST_DATA",
+            payload: json,
+          });
           setShowSnackBar(true);
           setSnackBarMessage("Post has been Added Successfully!");
           handleCloseDialog();
@@ -187,10 +189,10 @@ function PostList() {
             </TableRow>
           </TableHead>
           <TableBody>
-            {data.length > 0 &&
-              data
+            {props.data?.length > 0 &&
+              props.data
                 .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
-                .map((row) => (
+                .map((row: any) => (
                   <TableRow key={row.id}>
                     <TableCell>{row.id}</TableCell>
                     <TableCell>{row.title}</TableCell>
@@ -221,7 +223,7 @@ function PostList() {
       <TablePagination
         rowsPerPageOptions={[3, 5, 10]}
         component="div"
-        count={data.length}
+        count={props.data?.length ? props.data?.length : 0}
         rowsPerPage={rowsPerPage}
         page={page}
         onPageChange={handleChangePage}
@@ -289,4 +291,11 @@ function PostList() {
   );
 }
 
-export default PostList;
+const mapStateToProps = function (state: any) {
+  console.log(state);
+  return {
+    ...state,
+  };
+};
+
+export default connect(mapStateToProps)(PostList);
