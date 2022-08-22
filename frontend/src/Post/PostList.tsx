@@ -174,12 +174,13 @@ function PostList(props: any) {
         <IconButton
           onClick={(e) => handleClickOpenDialog("Add", null)}
           style={{ float: "right" }}
+          data-testid="addPost"
         >
           <Add fontSize="small" />
         </IconButton>
       </Tooltip>
       <TableContainer component={Paper}>
-        <Table>
+        <Table data-testid="table">
           <TableHead>
             <TableRow>
               <TableCell>ID</TableCell>
@@ -202,13 +203,17 @@ function PostList(props: any) {
                         <Tooltip title="Edit" arrow>
                           <IconButton
                             onClick={(e) => handleClickOpenDialog("Edit", row)}
+                            data-testid="editPost"
                           >
                             <Edit fontSize="small" />
                           </IconButton>
                         </Tooltip>
 
                         <Tooltip title="Delete" arrow>
-                          <IconButton onClick={(e) => handleDelete(row.id)}>
+                          <IconButton
+                            onClick={(e) => handleDelete(row.id)}
+                            data-testid="deletePost"
+                          >
                             <Delete color="error" fontSize="small" />
                           </IconButton>
                         </Tooltip>
@@ -228,6 +233,7 @@ function PostList(props: any) {
         page={page}
         onPageChange={handleChangePage}
         onRowsPerPageChange={handleChangeRowsPerPage}
+        data-testid="pagination"
       />
       <Snackbar
         open={showSnackBar}
